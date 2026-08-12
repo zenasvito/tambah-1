@@ -326,7 +326,8 @@ else:
             st.info("Tidak ada game yang cocok dengan kriteria filter saat ini.")
         else:
             total_data = len(df_filtered)
-            limit_tampil = st.number_input("Tampilkan jumlah game:", min_value=5, max_value=total_data, value=min(20, total_data), step=5)
+            batas_min = 1 if total_data > 0 else 0
+            limit_tampil = st.number_input("Tampilkan jumlah game:", min_value=batas_min, max_value=total_data, value=min(20, total_data), step=1)
             df_display = df_filtered.head(limit_tampil)
             
             hdr_cols = st.columns([1, 3.5, 1.5, 2, 1.5, 1, 1])
