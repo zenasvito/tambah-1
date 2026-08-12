@@ -311,7 +311,7 @@ else:
             
         df_filtered = df.copy()
         if search_query:
-            df_filtered = df_filtered[df_filtered["Judul Game"].str.contains(search_query, case=False)]
+        df_filtered = df_filtered[df_filtered["Judul Game"].str.contains(search_query, case=False, regex=False)]
         if selected_store != "Semua Toko":
             df_filtered = df_filtered[df_filtered["Toko"] == selected_store]
             
