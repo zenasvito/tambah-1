@@ -551,7 +551,7 @@ else:
                 st.info("Tidak ditemukan game di bawah Rp 50.000.")
 
     # ------------------------------------------
-    # MENU 5: CARI GAME SERUPA (AI)
+    # MENU 5: CARI GAME SERUPA 
     # ------------------------------------------
     elif menu_pilihan == "🤖 Cari Game Serupa":
         st.title("🤖 Cari Alternatif Game Serupa")
