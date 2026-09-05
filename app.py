@@ -277,11 +277,7 @@ menu_pilihan = st.sidebar.radio(
     [
         "🎯 Semua Diskon Utama",
         "💖 Wishlist Saya",
-        "📊 Bandingkan Harga Toko",
-        "🎁 Pojok Pemburu Diskon",
-        "🤖 Cari Game Serupa",
-        "💰 Racik Paket Budget",
-        "👥 Patungan Mabar"
+        "🤖 Cari Game Serupa"
     ]
 )
 
@@ -469,88 +465,6 @@ else:
                                     st.rerun()
 
     # ------------------------------------------
-    # MENU 3: BANDINGKAN HARGA TOKO
-    # ------------------------------------------
-    elif menu_pilihan == "📊 Bandingkan Harga Toko":
-        st.title("📊 Matriks Perbandingan Harga Antar Retail")
-        
-        pilihan_game_banding = st.selectbox("🎯 Pilih Game yang Ingin Dikomparasi:", sorted(df["Judul Game"].unique()))
-        
-        if pilihan_game_banding:
-            game_id_target = df[df["Judul Game"] == pilihan_game_banding]["Game_ID"].values[0]
-            with st.spinner("Membandingkan harga di berbagai toko..."):
-                detail_game = fetch_game_prices(game_id_target)
-                
-            if detail_game and 'deals' in detail_game:
-                data_komparasi = []
-                for deal in detail_game['deals']:
-                    data_komparasi.append({
-                        "Nama Toko": STORE_MAPPING.get(str(deal['storeID']), f"Toko ID {deal['storeID']}"),
-                        "Harga Diskon (Rp)": float(deal['price']) * KURS_RUPIAH,
-                        "Harga Normal (Rp)": float(deal['retailPrice']) * KURS_RUPIAH,
-                        "Link": f"https://www.cheapshark.com/redirect?dealID={deal['dealID']}"
-                    })
-                df_komparasi = pd.DataFrame(data_komparasi)
-                
-                g_col1, g_col2 = st.columns([3, 2])
-                with g_col1:
-                    st.markdown("#### 📈 Grafik Perbandingan Harga Diskon (Rp):")
-                    st.bar_chart(df_komparasi, x="Nama Toko", y="Harga Diskon (Rp)", color="#00ffcc")
-                with g_col2:
-                    st.markdown("#### 📋 Rincian Transparansi Harga:")
-                    st.dataframe(
-                        df_komparasi, 
-                        use_container_width=True, 
-                        hide_index=True,
-                        column_config={
-                            "Harga Diskon (Rp)": st.column_config.NumberColumn(format="Rp %,.0f"),
-                            "Harga Normal (Rp)": st.column_config.NumberColumn(format="Rp %,.0f"),
-                            "Link": st.column_config.LinkColumn("Beli", display_text="Ke Toko 🛒")
-                        }
-                    )
-            else:
-                st.warning("Data komparasi toko alternatif tidak ditemukan.")
-
-    # ------------------------------------------
-    # MENU 4: POJOK PEMBURU DISKON
-    # ------------------------------------------
-    elif menu_pilihan == "🎁 Pojok Pemburu Diskon":
-        st.title("🎁 Pojok Pemburu Diskon")
-        
-        df_gratis = df[df["Harga Diskon ($)"] == 0]
-        df_murah = df[(df["Estimasi Rupiah (Rp)"] > 0) & (df["Estimasi Rupiah (Rp)"] <= 50000)].sort_values("Estimasi Rupiah (Rp)")
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            st.subheader("🆓 Game Gratis Saat Ini (Rp 0)")
-            if not df_gratis.empty:
-                st.dataframe(
-                    df_gratis[["Judul Game", "Toko", "Link Beli"]], 
-                    hide_index=True,
-                    use_container_width=True,
-                    column_config={
-                        "Link Beli": st.column_config.LinkColumn("Aksi", display_text="Klaim 🎁")
-                    }
-                )
-            else:
-                st.info("Saat ini belum ada game gratis yang tersedia.")
-                
-        with c2:
-            st.subheader("🪙 Game di Bawah Rp 50.000")
-            if not df_murah.empty:
-                st.dataframe(
-                    df_murah[["Judul Game", "Toko", "Estimasi Rupiah (Rp)", "Link Beli"]], 
-                    hide_index=True,
-                    use_container_width=True,
-                    column_config={
-                        "Estimasi Rupiah (Rp)": st.column_config.NumberColumn(format="Rp %,.0f"),
-                        "Link Beli": st.column_config.LinkColumn("Beli", display_text="🛒")
-                    }
-                )
-            else:
-                st.info("Tidak ditemukan game di bawah Rp 50.000.")
-
-    # ------------------------------------------
     # MENU 5: CARI GAME SERUPA 
     # ------------------------------------------
     elif menu_pilihan == "🤖 Cari Game Serupa":
@@ -587,53 +501,3 @@ else:
                     st.info("Tidak ada game yang cukup mirip dengan ambang batas tersebut. Coba turunkan persentase kemiripan.")
             except Exception as e:
                 st.error(f"Terjadi kesalahan dalam memproses rekomendasi AI: {e}")
-
-    # ------------------------------------------
-    # MENU 6: RACIK PAKET BUDGET
-    # ------------------------------------------
-    elif menu_pilihan == "💰 Racik Paket Budget":
-        st.title("💰 Racik Paket Game Otomatis")
-        budget = st.number_input("Masukkan Budget (Rp):", min_value=10000, max_value=5000000, value=150000, step=10000)
-        budget_usd = budget / KURS_RUPIAH
-        
-        if st.button("Racik Sekarang 🚀", use_container_width=True):
-            df_terjangkau = df[df["Harga Diskon ($)"] <= budget_usd].sort_values(by='Skor Kelayakan (0-10)', ascending=False)
-            keranjang = []
-            total = 0.0
-            
-            for _, row in df_terjangkau.iterrows():
-                if total + row['Harga Diskon ($)'] <= budget_usd:
-                    keranjang.append(row)
-                    total += row['Harga Diskon ($)']
-                    
-            if keranjang:
-                st.success(f"🎉 Berhasil mendapatkan **{len(keranjang)} Game**! Total: **Rp {int(total * KURS_RUPIAH):,}** (Sisa budget: Rp {int((budget_usd - total) * KURS_RUPIAH):,})")
-                st.dataframe(
-                    pd.DataFrame(keranjang)[["Judul Game", "Toko", "Estimasi Rupiah (Rp)", "Link Beli"]], 
-                    hide_index=True,
-                    use_container_width=True,
-                    column_config={
-                        "Estimasi Rupiah (Rp)": st.column_config.NumberColumn(format="Rp %,.0f"),
-                        "Link Beli": st.column_config.LinkColumn("Beli", display_text="🛒")
-                    }
-                )
-            else:
-                st.error("Budget tidak cukup untuk membeli game apa pun pada diskon saat ini. Coba naikkan budget Anda!")
-
-    # ------------------------------------------
-    # MENU 7: PATUNGAN MABAR
-    # ------------------------------------------
-    elif menu_pilihan == "👥 Patungan Mabar":
-        st.title("👥 Kalkulator Patungan Mabar")
-        st.write("Hitung biaya pembagian jika kamu ingin membeli paket game *multiplayer* atau *family sharing* bersama teman-temanmu!")
-        
-        c_patungan1, c_patungan2 = st.columns(2)
-        with c_patungan1:
-            harga = st.number_input("Total Harga Game/Paket (Rp):", min_value=0, max_value=10000000, value=150000, step=5000)
-        with c_patungan2:
-            orang = st.slider("Jumlah Orang:", min_value=2, max_value=10, value=3)
-            
-        if harga > 0:
-            biaya_per_orang = int(harga / orang)
-            st.metric("Biaya yang Harus Dibayar Per Orang:", f"Rp {biaya_per_orang:,}")
-            st.info(f"💡 Tip: Dengan membagi kepada {orang} orang, kalian masing-masing menghemat **Rp {int(harga - biaya_per_orang):,}** dibandingkan beli sendiri!")
