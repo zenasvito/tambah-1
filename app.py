@@ -385,39 +385,48 @@ else:
             
             with tab_login:
                 st.write("### Masuk ke Akun Kamu")
-                login_user = st.text_input("Username:", key="login_user")
-                login_pass = st.text_input("Password:", type="password", key="login_pass")
-                
-                if st.button("Masuk 🚀", use_container_width=True):
-                    if login_user and login_pass:
-                        if cek_login(login_user, login_pass):
-                            st.session_state['logged_in'] = True
-                            st.session_state['username'] = login_user
-                            st.success(f"Selamat datang kembali, {login_user}!")
-                            st.rerun()
+                # Menggunakan st.form untuk Login
+                with st.form(key="form_login"):
+                    login_user = st.text_input("Username:")
+                    login_pass = st.text_input("Password:", type="password")
+                    
+                    submit_login = st.form_submit_button("Masuk 🚀", use_container_width=True)
+                    
+                    if submit_login:
+                        if login_user and login_pass:
+                            if cek_login(login_user, login_pass):
+                                st.session_state['logged_in'] = True
+                                st.session_state['username'] = login_user
+                                st.success(f"Selamat datang kembali, {login_user}!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Username atau Password salah.")
                         else:
-                            st.error("❌ Username atau Password salah.")
-                    else:
-                        st.warning("⚠️ Harap isi username dan password.")
+                            st.warning("⚠️ Harap isi username dan password.")
                         
             with tab_daftar:
                 st.write("### Buat Akun Baru")
-                reg_user = st.text_input("Pilih Username Baru:", key="reg_user")
-                reg_pass = st.text_input("Pilih Password:", type="password", key="reg_pass")
-                reg_pass_conf = st.text_input("Ulangi Password:", type="password", key="reg_pass_conf")
-                
-                if st.button("Daftar Sekarang 📋", use_container_width=True):
-                    if reg_user and reg_pass:
-                        if reg_pass == reg_pass_conf:
-                            sukses, pesan = daftar_user(reg_user, reg_pass)
-                            if sukses:
-                                st.success(pesan)
+                # Menggunakan st.form untuk Pendaftaran
+                with st.form(key="form_daftar"):
+                    reg_user = st.text_input("Pilih Username Baru:")
+                    reg_pass = st.text_input("Pilih Password:", type="password")
+                    reg_pass_conf = st.text_input("Ulangi Password:", type="password")
+                    
+                    submit_daftar = st.form_submit_button("Daftar Sekarang 📋", use_container_width=True)
+                    
+                    if submit_daftar:
+                        # Pengecekan ditambahkan untuk ketiga variabel
+                        if reg_user and reg_pass and reg_pass_conf:
+                            if reg_pass == reg_pass_conf:
+                                sukses, pesan = daftar_user(reg_user, reg_pass)
+                                if sukses:
+                                    st.success(pesan)
+                                else:
+                                    st.error(pesan)
                             else:
-                                st.error(pesan)
+                                st.warning("⚠️ Konfirmasi password tidak cocok.")
                         else:
-                            st.warning("⚠️ Konfirmasi password tidak cocok.")
-                    else:
-                        st.warning("⚠️ Semua kolom wajib diisi.")
+                            st.warning("⚠️ Semua kolom wajib diisi.")
 
         else:
             st.markdown(f"### *Selamat datang di koleksi game impianmu, **{st.session_state['username']}**!*")
