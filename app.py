@@ -183,40 +183,47 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 }
 
-@st.cache_data(ttl=300)  # Menurunkan TTL cache jadi 5 menit agar cepat update
-def fetch_deals():
-    url = "https://www.cheapshark.com/api/1.0/deals"
-    params = {"sortBy": "Savings", "onSale": 1, "pageSize": 100}
-    try:
-        response = requests.get(url, params=params, headers=HEADERS, timeout=15)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            st.warning(f"⚠️ API CheapShark merespons dengan status code: {response.status_code}")
-            return []
-    except Exception as e:
-        st.error(f"⚠️ Kesalahan koneksi ke CheapShark: {e}")
-        return []
+STORE_NAME_TO_ID = {v: k for k, v in STORE_MAPPING.items()}
 
 @st.cache_data(ttl=300)
-def fetch_game_prices(game_id):
-    url = f"https://www.cheapshark.com/api/1.0/games?id={game_id}"
-    try:
-        response = requests.get(url, headers=HEADERS, timeout=15)
-        if response.status_code == 200:
-            return response.json()
-    except Exception:
-        pass
-    return {}
+def fetch_deals(store_id=None, title=None, min_metacritic=0, max_pages=3, page_size=60):
+    all_deals = []
+    for page in range(max_pages):
+        params = {
+            "sortBy": "Savings",
+            "onSale": 1,
+            "pageSize": page_size,
+            "pageNumber": page,
+        }
+        if store_id:
+            params["storeID"] = store_id
+        if title:
+            params["title"] = title
+        if min_metacritic > 0:
+            params["metacritic"] = min_metacritic
 
-with st.spinner("Sedang menyinkronkan data diskon terbaru..."):
-    raw_data = fetch_deals()
+        try:
+            r = requests.get(
+                "https://www.cheapshark.com/api/1.0/deals",
+                params=params, headers=HEADERS, timeout=15
+            )
+            if r.status_code != 200:
+                break
+            data = r.json()
+        except Exception:
+            break
 
-df = pd.DataFrame()
-if raw_data:
-    processed_data = []
-    waktu_sekarang = datetime.datetime.now()
-    
+        if not data:
+            break
+        all_deals.extend(data)
+        if len(data) < page_size:   # halaman terakhir
+            break
+
+    # hilangkan duplikat
+    return list({d["dealID"]: d for d in all_deals}.values())
+
+
+def process_deals(raw_data):
     for item in raw_data: 
         nama_toko = STORE_MAPPING.get(str(item['storeID']), f"Toko Lain ({item['storeID']})")
         link_toko = f"https://www.cheapshark.com/redirect?dealID={item['dealID']}"
@@ -253,6 +260,10 @@ if raw_data:
             "Fitur_Konten": f"{item['title']} {nama_toko}"
         })
     df = pd.DataFrame(processed_data)
+
+with st.spinner("Sedang menyinkronkan data diskon terbaru..."):
+    raw_data = fetch_deals(max_pages=2)
+df = process_deals(raw_data)
     
 # ==========================================
 # 4. TOMBOL MENU NAVIGASI (SIDEBAR)
@@ -305,16 +316,27 @@ else:
                 min_metacritic = st.slider("⭐ Minimal Skor Metacritic:", 0, 100, 0, 5)
                 min_deal_rating = st.slider("📈 Minimal Skor Kelayakan:", 0.0, 10.0, 0.0, 0.5)
             
-        df_filtered = df.copy()
-        if search_query:
-            df_filtered = df_filtered[df_filtered["Judul Game"].str.contains(search_query, case=False, regex=False)]
-        if selected_store != "Semua Toko":
-            df_filtered = df_filtered[df_filtered["Toko"] == selected_store]
-            
-        df_filtered = df_filtered[
-            (df_filtered["Metacritic"] >= min_metacritic) & 
-            (df_filtered["Skor Kelayakan (0-10)"] >= min_deal_rating)
-        ]
+        store_id = STORE_NAME_TO_ID.get(selected_store) if selected_store != "Semua Toko" else None
+
+        if store_id or search_query or min_metacritic > 0:
+            with st.spinner("Mengambil data dari CheapShark..."):
+                raw_filtered = fetch_deals(
+                    store_id=store_id,
+                    title=search_query or None,
+                    min_metacritic=min_metacritic,
+                    max_pages=3,
+                )
+            df_filtered = process_deals(raw_filtered)
+        else:
+            df_filtered = df.copy()
+
+        # filter yang tidak ada di API tetap di pandas
+        if not df_filtered.empty:
+            df_filtered = df_filtered[df_filtered["Skor Kelayakan (0-10)"] >= min_deal_rating]
+            if search_query:
+                df_filtered = df_filtered[
+                    df_filtered["Judul Game"].str.contains(search_query, case=False, regex=False)
+                ]
         
         st.markdown("---")
         
