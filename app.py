@@ -224,6 +224,11 @@ def fetch_deals(store_id=None, title=None, min_metacritic=0, max_pages=3, page_s
 
 
 def process_deals(raw_data):
+    if not raw_data:
+        return pd.DataFrame()
+
+    processed_data = []
+    waktu_sekarang = datetime.datetime.now()
     for item in raw_data: 
         nama_toko = STORE_MAPPING.get(str(item['storeID']), f"Toko Lain ({item['storeID']})")
         link_toko = f"https://www.cheapshark.com/redirect?dealID={item['dealID']}"
