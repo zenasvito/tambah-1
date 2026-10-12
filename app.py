@@ -186,7 +186,7 @@ HEADERS = {
 @st.cache_data(ttl=300)  # Menurunkan TTL cache jadi 5 menit agar cepat update
 def fetch_deals():
     url = "https://www.cheapshark.com/api/1.0/deals"
-    params = {"sortBy": "Savings", "onSale": 1, "pageSize": 150}
+    params = {"sortBy": "Savings", "onSale": 1, "pageSize": 500}
     try:
         response = requests.get(url, params=params, headers=HEADERS, timeout=15)
         if response.status_code == 200:
