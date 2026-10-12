@@ -303,7 +303,6 @@ st.sidebar.caption("Data terintegrasi real-time & Database cloud PostgreSQL.")
 # ==========================================
 # 5. LOGIKA PERPINDAHAN HALAMAN
 # ==========================================
-st.write(type(df))
 if df.empty:
     st.error("⚠️ Gagal memuat data dari API CheapShark. Periksa koneksi internet atau coba kembali beberapa saat lagi.")
 else:
