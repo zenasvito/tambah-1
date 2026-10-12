@@ -186,7 +186,7 @@ HEADERS = {
 @st.cache_data(ttl=300)  # Menurunkan TTL cache jadi 5 menit agar cepat update
 def fetch_deals():
     url = "https://www.cheapshark.com/api/1.0/deals"
-    params = {"sortBy": "Savings", "onSale": 1, "pageSize": 500}
+    params = {"sortBy": "Savings", "onSale": 1, "pageSize": 100}
     try:
         response = requests.get(url, params=params, headers=HEADERS, timeout=15)
         if response.status_code == 200:
@@ -323,7 +323,7 @@ else:
         else:
             total_data = len(df_filtered)
             batas_min = 1 if total_data > 0 else 0
-            limit_tampil = st.number_input("Tampilkan jumlah game:", min_value=batas_min, max_value=total_data, value=min(20, total_data), step=1)
+            limit_tampil = st.number_input("Tampilkan jumlah game:", min_value=batas_min, max_value=total_data, value=min(100, total_data), step=1)
             df_display = df_filtered.head(limit_tampil)
             
             hdr_cols = st.columns([1, 3.5, 1.5, 2, 1.5, 1, 1])
